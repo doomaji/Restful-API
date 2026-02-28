@@ -36,11 +36,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public User getUser(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found: " + id));
+                .orElse(null);
     }
 
     @Override
-    public void saveUser(User incoming, List<Long> roleIds) {
+    public User saveUser(User incoming, List<Long> roleIds) {
 
         if (userRepository.existsByUsername(incoming.getUsername())) {
 
@@ -62,7 +62,7 @@ public class UserServiceImpl implements UserService {
         if (incoming.getId() == null) {
             incoming.setPassword(passwordEncoder.encode(incoming.getPassword()));
             userRepository.save(incoming);
-            return;
+            return incoming;
         }
 
         User db = userRepository.findById(incoming.getId())
@@ -78,7 +78,8 @@ public class UserServiceImpl implements UserService {
             db.setPassword(passwordEncoder.encode(incoming.getPassword()));
         }
 
-        userRepository.save(db); // ✅ обязательно
+        userRepository.save(db);
+        return db;
     }
 
     @Override

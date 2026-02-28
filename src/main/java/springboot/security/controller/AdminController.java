@@ -48,7 +48,7 @@ public class AdminController {
                            @RequestParam(value="roleIds", required=false) List<Long> roleIds,
                            Model model) {
 
-        // roles required (сервер)
+
         if (roleIds == null || roleIds.isEmpty()) {
             bindingResult.reject("roles.empty", "Select at least one role");
         }
