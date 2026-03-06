@@ -1,10 +1,8 @@
 package springboot.security.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import springboot.security.jpa.RoleRepository;
 import springboot.security.model.Role;
 import springboot.security.model.User;
-import springboot.security.service.RoleService;
 import springboot.security.service.UserService;
 
 import java.net.URI;
@@ -17,7 +15,7 @@ public class MyRestController {
 
     private final UserService userService;
 
-    public MyRestController(UserService userService, RoleService roleService) {
+    public MyRestController(UserService userService) {
         this.userService = userService;
     }
 
