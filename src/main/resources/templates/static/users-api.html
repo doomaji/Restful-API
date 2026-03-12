@@ -83,9 +83,6 @@
     <ul id="user-list" class="list-group"></ul>
 </div>
 
-
-
-
 <script>
     async function loadUsers() {
         const response = await fetch('api/users');
@@ -100,8 +97,8 @@
 
             list.innerHTML = `
             <span>
-                <strong>${u.name}</strong>
-                (${u.role}) - ${u.username}
+                <strong>${u.username}</strong>
+                (${u.roles}) - ${u.username}
             </span>
         <div>
             <button class="btn btn-sm btn-outline-secondary me-2"

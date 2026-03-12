@@ -48,21 +48,79 @@
 
             <div class="tab-content" id="adminTabsContent">
 
-                <div class="tab-pane fade"
-                     th:classappend="${activeTab}=='users' ? ' show active' : ''"
-                     id="usersTab">
-                    <div th:replace="~{fragments/user-table :: userTable(${users}, true)}"></div>
-                </div>
+                <h5>User list</h5>
+                <ul id="user-list" class="list-group"></ul>
 
                 <div class="tab-pane fade"
                      th:classappend="${activeTab}=='newUser' ? ' show active' : ''"
                      id="newUserTab">
-                    <div th:replace="~{fragments/user-form :: userForm(${user}, ${roles})}"></div>
-                </div>
+                    <div class="card p-3 mb-4">
+                        <h5 id="formTitle">Add user</h5>
 
+                        <form id="userForm">
+                            <input type="hidden" id="userId">
+
+                            <div class="mb-2">
+                                <input name="firstName"
+                                       id="firstName"
+                                       class="form-control"
+                                       placeholder="First Name"
+                                       required>
+                            </div>
+
+                            <div class="mb-2">
+                                <input name="lastName"
+                                       id="lastName"
+                                       class="form-control"
+                                       placeholder="Last Name"
+                                       required>
+                            </div>
+
+                            <div class="mb-2">
+                                <input name="email"
+                                       id="email"
+                                       type="email"
+                                       class="form-control"
+                                       placeholder="Email"
+                                       required>
+                            </div>
+
+                            <div class="mb-2">
+                                <input name="username"
+                                       id="username"
+                                       class="form-control"
+                                       placeholder="Username"
+                                       required>
+                            </div>
+
+                            <div class="mb-2">
+                                <input name="password"
+                                       type="password"
+                                       id="password"
+                                       class="form-control"
+                                       placeholder="Password"
+                                       required>
+                            </div>
+
+                            <div class="mb-3 text-center">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" name="roleIds" value="1" id="role-admin">
+                                    <label class="form-check-label" for="role-admin">Admin</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" name="roleIds" value="2" id="role-user">
+                                    <label class="form-check-label" for="role-user">User</label>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-primary" id="saveBtn">
+                                Save
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
-
     </div>
 </div>
 
@@ -71,80 +129,96 @@
 <div th:replace="~{fragments/deleteModal :: deleteModal}"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const editModal = document.getElementById('editModal');
-        if (!editModal) return;
+    async function loadUsers() {
+        const response = await fetch('api/users');
+        const users = await response.json();
 
-        editModal.addEventListener('show.bs.modal', (event) => {
-            const button = event.relatedTarget;
-            if (!button) return;
+        const list = document.getElementById('user-list');
+        list.innerHTML = '';
 
-            document.getElementById('edit-id').value = button.getAttribute('data-id') || '';
-            document.getElementById('edit-firstName').value = button.getAttribute('data-firstname') || '';
-            document.getElementById('edit-lastName').value  = button.getAttribute('data-lastname') || '';
-            document.getElementById('edit-email').value     = button.getAttribute('data-email') || '';
-            document.getElementById('edit-username').value  = button.getAttribute('data-username') || '';
+        for (const u of users) {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center'
 
-            const select = document.getElementById('edit-roles');
+            list.innerHTML = `
+            <span>
+                <strong>${u.username}</strong>
+                (${u.roles}) - ${u.username}
+            </span>
+            <div>
+                <button class="btn btn-sm btn-outline-secondary me-2"
+                        onclick="editUser(${u.id}, '${p.firstName}', '${u.lastName}', '${u.username}', ${u.email}">
+                   Edit
+                </button>
+                <button class="btn btn-sm btn-outline-danger"
+                        onclick="deleteUser(${u.id})">
+                    Delete
+                </button>
+        </div>
+    `;
 
-            Array.from(select.options).forEach(o => o.selected = false);
+            list.appendChild(li);
+        }
+    }
 
-            const rolesStr = button.getAttribute('data-roles') || '';
-            const ids = rolesStr.split(',').map(s => s.trim()).filter(Boolean);
+    document.getElementById('userForm')
+        .addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-            ids.forEach(id => {
-                const opt = select.querySelector(`option[value="${id}"]`);
-                if (opt) opt.selected = true;
-            });
+            const id = document.getElementById('userId').value;
 
+            const user = {
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                username: document.getElementById('username').value,
+                email: document.getElementById('email').value,
+                roleIds: document.getElementById('roleIds').value
+            };
 
-            const err = document.getElementById('edit-roles-error');
-            if (err) err.textContent = '';
-        });
-
-
-        editModal.addEventListener('submit', (e) => {
-            const form = e.target.closest('form');
-            if (!form) return;
-            const selected = form.querySelectorAll('#edit-roles option:checked').length;
-            if (selected === 0) {
-                e.preventDefault();
-                const err = document.getElementById('edit-roles-error');
-                if (err) err.textContent = 'Select at least one role';
+            if (id) {
+                await fetch(`api/users/${id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(user)
+                });
+            } else {
+                await fetch(`api/users`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(user)
+                });
             }
+
+            resetFrom();
+            await loadProducts();
         });
-    });
-</script>
 
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const deleteModal = document.getElementById('deleteModal');
-        if (!deleteModal) return;
+    function editUser(firstName, lastName, email, username, password, role) {
+        document.getElementById('firstName').value = firstName;
+        document.getElementById('lastName').value = lastName;
+        document.getElementById('email').value = email;
+        document.getElementById('username').value = username;
+        document.getElementById('password').value = password;
+        document.getElementById('role').value = role;
 
-        deleteModal.addEventListener('show.bs.modal', (event) => {
-            const button = event.relatedTarget;
-            if (!button) return;
+        document.getElementById('formTitle').innerText = 'Edit user';
+        document.getElementById('saveBtn').innerText = 'Update';
+    }
 
-            document.getElementById('delete-id').value = button.getAttribute('data-id') || '';
-            document.getElementById('delete-firstName').value = button.getAttribute('data-firstname') || '';
-            document.getElementById('delete-lastName').value = button.getAttribute('data-lastname') || '';
-            document.getElementById('delete-email').value = button.getAttribute('data-email') || '';
-            document.getElementById('delete-username').value = button.getAttribute('data-username') || '';
 
-            const select = document.getElementById('delete-roles');
-            select.innerHTML = '';
+    async function deleteUser(id) {
+        await fetch(`api/users/${id}`, { method: 'DELETE'});
+        await loadUsers();
+    }
 
-            const rolesStr = button.getAttribute('data-roles') || '';
-            const roles = rolesStr.split(',').map(s => s.trim()).filter(Boolean);
+    function resetForm() {
+        document.getElementById('userId').value = '';
+        document.getElementById('userForm').reset();
+        document.getElementById('formTitle').innerText = 'Add user';
+        document.getElementById('saveBtn').innerText = 'Save';
+    }
 
-            roles.forEach(r => {
-                const opt = document.createElement('option');
-                opt.textContent = r.replace('ROLE_', '');
-                opt.selected = true;
-                select.appendChild(opt);
-            });
-        });
-    });
+    loadUsers();
 </script>
 </body>
 </html>
