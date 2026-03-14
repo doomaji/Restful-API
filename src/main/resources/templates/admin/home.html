@@ -130,7 +130,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     async function loadUsers() {
-        const response = await fetch('api/users');
+        const response = await fetch('/api/users');
         const users = await response.json();
 
         const list = document.getElementById('user-list');
@@ -140,14 +140,15 @@
             const li = document.createElement('li');
             li.className = 'list-group-item d-flex justify-content-between align-items-center'
 
-            list.innerHTML = `
+            let myRoles = u.roles.map(role => role.name).join();
+            li.innerHTML = `
             <span>
                 <strong>${u.username}</strong>
-                (${u.roles}) - ${u.username}
+                (${myRoles}) - ${u.username}
             </span>
             <div>
                 <button class="btn btn-sm btn-outline-secondary me-2"
-                        onclick="editUser(${u.id}, '${p.firstName}', '${u.lastName}', '${u.username}', ${u.email}">
+                        onclick="editUser(${u.id}, '${u.firstName}', '${u.lastName}', '${u.username}', ${u.email}">
                    Edit
                 </button>
                 <button class="btn btn-sm btn-outline-danger"
@@ -189,8 +190,8 @@
                 });
             }
 
-            resetFrom();
-            await loadProducts();
+            resetForm();
+            await loadUsers();
         });
 
     function editUser(firstName, lastName, email, username, password, role) {
