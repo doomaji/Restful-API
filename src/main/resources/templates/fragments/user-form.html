@@ -1,87 +1,72 @@
 <div th:fragment="userForm(user, roles)">
-    <form th:action="@{/admin/save}" th:object="${user}" method="post">
 
-        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-        <input type="hidden" th:field="*{id}"/>
+    <form id="userForm">
+
 
         <div class="mx-auto" style="max-width: 420px;">
 
             <div class="text-center fw-bold mb-1">First Name</div>
             <div class="mb-3">
-                <input class="form-control form-control-sm" th:field="*{firstName}"
-                required
-                th:classappend="${#fields.hasErrors('firstName')} ? ' is-invalid' : ''">
-            </div>
-            <div
-                    th:if="${#fields.hasErrors('firstName')}"
-                    th:errors="*{firstName}" style="color: red;">
+                <input class="form-control form-control-sm"
+                       id="firstName"
+                       name="firstName"
+                       required>
             </div>
 
             <div class="text-center fw-bold mb-1">Last Name</div>
             <div class="mb-3">
-                <input class="form-control form-control-sm" th:field="*{lastName}"
-                       required
-                       th:classappend="${#fields.hasErrors('lastName')} ? ' is-invalid' : ''">
-            </div>
-            <div
-                    th:if="${#fields.hasErrors('lastName')}"
-                    th:errors="*{lastName}" style="color: red;">
+                <input class="form-control form-control-sm"
+                       id="lastName"
+                       name="lastName"
+                       required>
             </div>
 
             <div class="text-center fw-bold mb-1">Email</div>
             <div class="mb-3">
-                <input class="form-control form-control-sm" th:field="*{email}"
-                       required
-                       th:classappend="${#fields.hasErrors('email')} ? ' is-invalid' : ''">
-            </div>
-            <div
-                    th:if="${#fields.hasErrors('email')}"
-                    th:errors="*{email}" style="color: red;">
+                <input type="email"
+                       class="form-control form-control-sm"
+                       id="email"
+                       name="email"
+                       required>
             </div>
 
             <div class="text-center fw-bold mb-1">Username</div>
             <div class="mb-3">
                 <input class="form-control form-control-sm"
-                       th:field="*{username}"
-                       required
-                       th:classappend="${#fields.hasErrors('username')} ? ' is-invalid' : ''">
-            </div>
-            <div
-                    th:if="${#fields.hasErrors('username')}"
-                    th:errors="*{username}" style="color: red;">
+                       id="username"
+                       name="username"
+                       required>
             </div>
 
             <div class="text-center fw-bold mb-1">Password</div>
             <div class="mb-3">
-                <input type="password" class="form-control form-control-sm" th:field="*{password}"
-                       required
-                       th:classappend="${#fields.hasErrors('password')} ? ' is-invalid' : ''">
-            </div>
-            <div
-                    th:if="${#fields.hasErrors('password')}"
-                    th:errors="*{password}" style="color: red;">
+                <input type="password"
+                       class="form-control form-control-sm"
+                       id="password"
+                       name="password"
+                       required>
             </div>
 
             <div class="text-center fw-bold mb-2">Roles</div>
             <div class="mb-3 text-center">
                 <div th:each="r : ${roles}" class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" name="roleIds" th:value="${r.id}">
-                    <label class="form-check-label" th:text="${r.name}"></label>
+                    <input class="form-check-input"
+                           type="checkbox"
+                           name="roleIds"
+                           th:value="${r.id}"
+                           th:id="'role_' + ${r.id}">
+                    <label class="form-check-label"
+                           th:for="'role_' + ${r.id}"
+                           th:text="${r.name}"></label>
                 </div>
-            </div>
-            <div
-                    th:if="${#fields.hasErrors('roles')}"
-                    th:errors="*{roles}" style="color: red;">
-            </div>
-            <div
-                    th:if="${#fields.hasErrors('Roles')}"
-                    th:errors="*{Roles}" style="color: red;">
             </div>
 
             <div class="text-center">
                 <button class="btn btn-success px-4" type="submit">Create</button>
             </div>
 
+            <div id="formError" class="alert alert-danger mt-3" style="display: none;"></div>
+            <div id="formSuccess" class="alert alert-success mt-3" style="display: none;"></div>
         </div>
     </form>
 </div>

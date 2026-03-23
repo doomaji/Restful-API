@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("api/users")
+@RequestMapping("/api/users")
 public class MyRestController {
 
     private final UserService userService;
@@ -34,10 +34,10 @@ public class MyRestController {
     }
 
     @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user, List<Long> roleId) {
+    public ResponseEntity<User> createUser(@RequestBody User user, @RequestParam List<Long> roleId) {
         User saved = userService.saveUser(user, roleId);
         return ResponseEntity
-                .created(URI.create("api/users" + saved.getId()))
+                .created(URI.create("/api/users" + saved.getId()))
                 .body(saved);
     }
 
@@ -47,7 +47,17 @@ public class MyRestController {
         if (existing == null) {
             return ResponseEntity.notFound().build();
         }
+
         existing.setUsername(user.getUsername());
+        existing.setFirstName(user.getFirstName());
+        existing.setLastName(user.getLastName());
+        existing.setEmail(user.getEmail());
+
+        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+            existing.setPassword(user.getPassword());
+        }
+
+
         List<Long> roleIds = user.getRoles() != null
                 ? user.getRoles().stream().map(Role::getId).collect(Collectors.toList())
                 : null;
@@ -56,8 +66,9 @@ public class MyRestController {
         return ResponseEntity.ok(saved);
     }
 
+
     @DeleteMapping("/{id}")
-    public ResponseEntity<User> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         User existing = userService.getUser(id);
         if (existing == null) {
             return ResponseEntity.notFound().build();

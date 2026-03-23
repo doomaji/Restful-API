@@ -48,79 +48,21 @@
 
             <div class="tab-content" id="adminTabsContent">
 
-                <h5>User list</h5>
-                <ul id="user-list" class="list-group"></ul>
+                <div class="tab-pane fade"
+                     th:classappend="${activeTab}=='users' ? ' show active' : ''"
+                     id="usersTab">
+                    <div th:replace="~{fragments/user-table :: userTable(${users}, true)}"></div>
+                </div>
 
                 <div class="tab-pane fade"
                      th:classappend="${activeTab}=='newUser' ? ' show active' : ''"
                      id="newUserTab">
-                    <div class="card p-3 mb-4">
-                        <h5 id="formTitle">Add user</h5>
-
-                        <form id="userForm">
-                            <input type="hidden" id="userId">
-
-                            <div class="mb-2">
-                                <input name="firstName"
-                                       id="firstName"
-                                       class="form-control"
-                                       placeholder="First Name"
-                                       required>
-                            </div>
-
-                            <div class="mb-2">
-                                <input name="lastName"
-                                       id="lastName"
-                                       class="form-control"
-                                       placeholder="Last Name"
-                                       required>
-                            </div>
-
-                            <div class="mb-2">
-                                <input name="email"
-                                       id="email"
-                                       type="email"
-                                       class="form-control"
-                                       placeholder="Email"
-                                       required>
-                            </div>
-
-                            <div class="mb-2">
-                                <input name="username"
-                                       id="username"
-                                       class="form-control"
-                                       placeholder="Username"
-                                       required>
-                            </div>
-
-                            <div class="mb-2">
-                                <input name="password"
-                                       type="password"
-                                       id="password"
-                                       class="form-control"
-                                       placeholder="Password"
-                                       required>
-                            </div>
-
-                            <div class="mb-3 text-center">
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" name="roleIds" value="1" id="role-admin">
-                                    <label class="form-check-label" for="role-admin">Admin</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" name="roleIds" value="2" id="role-user">
-                                    <label class="form-check-label" for="role-user">User</label>
-                                </div>
-                            </div>
-
-                            <button class="btn btn-primary" id="saveBtn">
-                                Save
-                            </button>
-                        </form>
-                    </div>
+                    <div th:replace="~{fragments/user-form :: userForm(${user}, ${roles})}"></div>
                 </div>
+
             </div>
         </div>
+
     </div>
 </div>
 
@@ -128,98 +70,342 @@
 <div th:replace="~{fragments/editModal :: editModal}"></div>
 <div th:replace="~{fragments/deleteModal :: deleteModal}"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-    async function loadUsers() {
-        const response = await fetch('/api/users');
-        const users = await response.json();
+    // REST API base URL
+    const API_BASE_URL = '/api/users';
 
-        const list = document.getElementById('user-list');
-        list.innerHTML = '';
+    // Helper function for API calls
+    async function apiCall(url, method, data = null) {
+        const options = {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        };
 
-        for (const u of users) {
-            const li = document.createElement('li');
-            li.className = 'list-group-item d-flex justify-content-between align-items-center'
+        if (data) {
+            options.body = JSON.stringify(data);
+        }
 
-            let myRoles = u.roles.map(role => role.name).join();
-            li.innerHTML = `
-            <span>
-                <strong>${u.username}</strong>
-                (${myRoles}) - ${u.username}
-            </span>
-            <div>
-                <button class="btn btn-sm btn-outline-secondary me-2"
-                        onclick="editUser(${u.id}, '${u.firstName}', '${u.lastName}', '${u.username}', ${u.email}">
-                   Edit
-                </button>
-                <button class="btn btn-sm btn-outline-danger"
-                        onclick="deleteUser(${u.id})">
-                    Delete
-                </button>
-        </div>
-    `;
+        try {
+            const response = await fetch(url, options);
 
-            list.appendChild(li);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || `HTTP error! status: ${response.status}`);
+            }
+
+            if (method === 'DELETE' || response.status === 204) {
+                return null;
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('API call failed:', error);
+            throw error;
         }
     }
 
-    document.getElementById('userForm')
-        .addEventListener('submit', async (e) => {
-            e.preventDefault();
+    // Load all users
+    async function loadUsers() {
+        try {
+            const users = await apiCall(API_BASE_URL, 'GET');
+            updateUserTable(users);
+        } catch (error) {
+            console.error('Failed to load users:', error);
+            showError('Failed to load users', error);
+        }
+    }
 
-            const id = document.getElementById('userId').value;
+    // Update user table with data
+    function updateUserTable(users) {
+        const tableBody = document.querySelector('#usersTab table tbody');
+        if (!tableBody) return;
 
-            const user = {
-                firstName: document.getElementById('firstName').value,
-                lastName: document.getElementById('lastName').value,
-                username: document.getElementById('username').value,
-                email: document.getElementById('email').value,
-                roleIds: document.getElementById('roleIds').value
-            };
+        tableBody.innerHTML = '';
 
-            if (id) {
-                await fetch(`api/users/${id}`, {
-                    method: 'PUT',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(user)
+        users.forEach(user => {
+            const row = tableBody.insertRow();
+
+            row.insertCell(0).textContent = user.id;
+            row.insertCell(1).textContent = user.firstName || '';
+            row.insertCell(2).textContent = user.lastName || '';
+            row.insertCell(3).textContent = user.email || '';
+            row.insertCell(4).textContent = user.username;
+
+            // Roles cell
+            const rolesCell = row.insertCell(5);
+            const rolesText = user.roles ? user.roles.map(r => r.name || r.authority || r).join(', ') : '';
+            rolesCell.textContent = rolesText;
+
+            // Actions cell
+            const actionsCell = row.insertCell(6);
+
+            const editBtn = document.createElement('button');
+            editBtn.textContent = 'Edit';
+            editBtn.className = 'btn btn-sm btn-primary me-2';
+            editBtn.setAttribute('data-bs-toggle', 'modal');
+            editBtn.setAttribute('data-bs-target', '#editModal');
+            editBtn.setAttribute('data-id', user.id);
+            editBtn.setAttribute('data-firstname', user.firstName || '');
+            editBtn.setAttribute('data-lastname', user.lastName || '');
+            editBtn.setAttribute('data-email', user.email || '');
+            editBtn.setAttribute('data-username', user.username);
+            // Store role IDs as JSON string
+            const roleIds = user.roles ? user.roles.map(r => r.id).join(',') : '';
+            editBtn.setAttribute('data-roles', roleIds);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.className = 'btn btn-sm btn-danger';
+            deleteBtn.setAttribute('data-bs-toggle', 'modal');
+            deleteBtn.setAttribute('data-bs-target', '#deleteModal');
+            deleteBtn.setAttribute('data-id', user.id);
+            deleteBtn.setAttribute('data-firstname', user.firstName || '');
+            deleteBtn.setAttribute('data-lastname', user.lastName || '');
+            deleteBtn.setAttribute('data-email', user.email || '');
+            deleteBtn.setAttribute('data-username', user.username);
+            deleteBtn.setAttribute('data-roles', rolesText);
+
+            actionsCell.appendChild(editBtn);
+            actionsCell.appendChild(deleteBtn);
+        });
+    }
+
+    // Create new user
+    async function createUser(userData, roleIds) {
+        const url = `${API_BASE_URL}?${roleIds.map(id => `roleId=${id}`).join('&')}`;
+
+        try {
+            const newUser = await apiCall(url, 'POST', userData);
+            showSuccess('User created successfully!');
+            await loadUsers();
+            return newUser;
+        } catch (error) {
+            console.error('Failed to create user:', error);
+            throw error;
+        }
+    }
+
+    // Update user
+    async function updateUser(id, userData) {
+        try {
+            const updatedUser = await apiCall(`${API_BASE_URL}/${id}`, 'PUT', userData);
+            showSuccess('User updated successfully!');
+            await loadUsers();
+            return updatedUser;
+        } catch (error) {
+            console.error('Failed to update user:', error);
+            throw error;
+        }
+    }
+
+    // Delete user
+    async function deleteUser(id) {
+        try {
+            await apiCall(`${API_BASE_URL}/${id}`, 'DELETE');
+            showSuccess('User deleted successfully!');
+            await loadUsers();
+        } catch (error) {
+            console.error('Failed to delete user:', error);
+            throw error;
+        }
+    }
+
+    // Helper functions for UI feedback
+    function showSuccess(message) {
+        alert(message);
+    }
+
+    function showError(message, error) {
+        alert(`${message}: ${error.message}`);
+    }
+
+    // Handle new user form submission
+    document.addEventListener('DOMContentLoaded', () => {
+        const userForm = document.getElementById('userForm');
+        if (userForm) {
+            userForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const firstName = document.getElementById('firstName').value;
+                const lastName = document.getElementById('lastName').value;
+                const email = document.getElementById('email').value;
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+
+                if (!username || !password) {
+                    alert('Username and password are required');
+                    return;
+                }
+
+                const selectedRoles = [];
+                document.querySelectorAll('input[name="roleIds"]:checked').forEach(checkbox => {
+                    selectedRoles.push(checkbox.value);
                 });
-            } else {
-                await fetch(`api/users`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(user)
+
+                if (selectedRoles.length === 0) {
+                    alert('Please select at least one role');
+                    return;
+                }
+
+                const userData = {
+                    username: username,
+                    firstName: firstName,
+                    lastName: lastName,
+                    email: email,
+                    password: password
+                };
+
+                try {
+                    await createUser(userData, selectedRoles);
+                    userForm.reset();
+
+                    // Switch to users tab
+                    const usersTab = document.querySelector('#users-tab');
+                    if (usersTab) {
+                        const tab = new bootstrap.Tab(usersTab);
+                        tab.show();
+                    }
+                } catch (error) {
+                    alert(`Failed to create user: ${error.message}`);
+                }
+            });
+        }
+    });
+
+    // Handle edit modal
+    document.addEventListener('DOMContentLoaded', () => {
+        const editModal = document.getElementById('editModal');
+        if (editModal) {
+            editModal.addEventListener('show.bs.modal', (event) => {
+                const button = event.relatedTarget;
+                if (!button) return;
+
+                document.getElementById('edit-id').value = button.getAttribute('data-id') || '';
+                document.getElementById('edit-firstName').value = button.getAttribute('data-firstname') || '';
+                document.getElementById('edit-lastName').value = button.getAttribute('data-lastname') || '';
+                document.getElementById('edit-email').value = button.getAttribute('data-email') || '';
+                document.getElementById('edit-username').value = button.getAttribute('data-username') || '';
+                document.getElementById('edit-password').value = '';
+
+                // Set selected roles
+                const editRolesSelect = document.getElementById('edit-roles');
+                if (editRolesSelect) {
+                    // Clear all selections
+                    Array.from(editRolesSelect.options).forEach(opt => opt.selected = false);
+
+                    const roleIds = button.getAttribute('data-roles') || '';
+                    const selectedRoleIds = roleIds.split(',').map(id => id.trim()).filter(Boolean);
+
+                    selectedRoleIds.forEach(roleId => {
+                        const option = Array.from(editRolesSelect.options).find(opt => opt.value === roleId);
+                        if (option) option.selected = true;
+                    });
+                }
+
+                const errorDiv = document.getElementById('edit-roles-error');
+                if (errorDiv) errorDiv.textContent = '';
+            });
+
+            const editForm = document.getElementById('editForm');
+            if (editForm) {
+                editForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+
+                    const id = document.getElementById('edit-id').value;
+                    const userData = {
+                        username: document.getElementById('edit-username').value,
+                        firstName: document.getElementById('edit-firstName').value,
+                        lastName: document.getElementById('edit-lastName').value,
+                        email: document.getElementById('edit-email').value
+                    };
+
+                    const password = document.getElementById('edit-password').value;
+                    if (password && password.trim() !== '') {
+                        userData.password = password;
+                    }
+
+                    const editRolesSelect = document.getElementById('edit-roles');
+                    const selectedOptions = Array.from(editRolesSelect.selectedOptions);
+
+                    if (selectedOptions.length === 0) {
+                        const errorDiv = document.getElementById('edit-roles-error');
+                        if (errorDiv) errorDiv.textContent = 'Please select at least one role';
+                        return;
+                    }
+
+                    userData.roles = selectedOptions.map(opt => ({
+                        id: parseInt(opt.value)
+                    }));
+
+                    try {
+                        await updateUser(id, userData);
+                        const modal = bootstrap.Modal.getInstance(editModal);
+                        modal.hide();
+                    } catch (error) {
+                        alert(`Failed to update user: ${error.message}`);
+                    }
                 });
             }
+        }
+    });
 
-            resetForm();
-            await loadUsers();
-        });
+    // Handle delete modal
+    document.addEventListener('DOMContentLoaded', () => {
+        const deleteModal = document.getElementById('deleteModal');
+        if (deleteModal) {
+            deleteModal.addEventListener('show.bs.modal', (event) => {
+                const button = event.relatedTarget;
+                if (!button) return;
 
-    function editUser(firstName, lastName, email, username, password, role) {
-        document.getElementById('firstName').value = firstName;
-        document.getElementById('lastName').value = lastName;
-        document.getElementById('email').value = email;
-        document.getElementById('username').value = username;
-        document.getElementById('password').value = password;
-        document.getElementById('role').value = role;
+                document.getElementById('delete-id').value = button.getAttribute('data-id') || '';
+                document.getElementById('delete-firstName').value = button.getAttribute('data-firstname') || '';
+                document.getElementById('delete-lastName').value = button.getAttribute('data-lastname') || '';
+                document.getElementById('delete-email').value = button.getAttribute('data-email') || '';
+                document.getElementById('delete-username').value = button.getAttribute('data-username') || '';
 
-        document.getElementById('formTitle').innerText = 'Edit user';
-        document.getElementById('saveBtn').innerText = 'Update';
-    }
+                const deleteRolesSelect = document.getElementById('delete-roles');
+                if (deleteRolesSelect) {
+                    deleteRolesSelect.innerHTML = '';
+                    const rolesStr = button.getAttribute('data-roles') || '';
+                    const roles = rolesStr.split(',').map(s => s.trim()).filter(Boolean);
 
+                    roles.forEach(role => {
+                        const option = document.createElement('option');
+                        option.textContent = role;
+                        option.selected = true;
+                        deleteRolesSelect.appendChild(option);
+                    });
+                }
+            });
 
-    async function deleteUser(id) {
-        await fetch(`api/users/${id}`, { method: 'DELETE'});
-        await loadUsers();
-    }
+            const deleteForm = document.getElementById('deleteForm');
+            if (deleteForm) {
+                deleteForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
 
-    function resetForm() {
-        document.getElementById('userId').value = '';
-        document.getElementById('userForm').reset();
-        document.getElementById('formTitle').innerText = 'Add user';
-        document.getElementById('saveBtn').innerText = 'Save';
-    }
+                    const id = document.getElementById('delete-id').value;
 
-    loadUsers();
+                    if (confirm('Are you sure you want to delete this user?')) {
+                        try {
+                            await deleteUser(id);
+                            const modal = bootstrap.Modal.getInstance(deleteModal);
+                            modal.hide();
+                        } catch (error) {
+                            alert(`Failed to delete user: ${error.message}`);
+                        }
+                    }
+                });
+            }
+        }
+    });
+
+    // Load users when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+        loadUsers();
+    });
 </script>
 </body>
 </html>
