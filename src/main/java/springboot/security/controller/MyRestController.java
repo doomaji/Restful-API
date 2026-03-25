@@ -1,5 +1,6 @@
 package springboot.security.controller;
 
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import springboot.security.model.Role;
@@ -37,13 +38,13 @@ public class MyRestController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createUser(
-            @RequestBody User user,
-            @RequestParam(required = false) List<Long> roleId) {
+    public ResponseEntity<?> createUser(@RequestBody User user) {
         try {
-            List<Long> rolesToAssign = roleId != null ? roleId : new ArrayList<>();
+            List<Long> roleIds = user.getRoles() != null
+                    ? user.getRoles().stream().map(Role::getId).collect(Collectors.toList())
+                    : new ArrayList<>();
 
-            User saved = userService.saveUser(user, rolesToAssign);
+            User saved = userService.saveUser(user, roleIds);
 
             return ResponseEntity
                     .created(URI.create("/api/users/" + saved.getId()))
@@ -77,8 +78,8 @@ public class MyRestController {
 
             User saved = userService.saveUser(existing, roleIds);
             return ResponseEntity.ok(saved);
-        } catch (DuplicateUsernameException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (DuplicateUsernameException | IncorrectResultSizeDataAccessException e) {
+            return ResponseEntity.badRequest().body("Пользователь с таким именем уже существует");
         }
     }
 
