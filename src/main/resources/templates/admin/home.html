@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
 <head>
@@ -7,7 +8,6 @@
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 </head>
-
 <body>
 
 <div th:replace="~{fragments/navbar :: navbar}"></div>
@@ -22,10 +22,11 @@
         <div class="col-md-9 col-lg-10 p-4">
             <h1 class="mb-3">Admin panel</h1>
 
+            <div id="messageBox"></div>
+
             <ul class="nav nav-tabs mb-3" id="adminTabs" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link"
-                            th:classappend="${activeTab}=='users' ? ' active' : ''"
+                    <button class="nav-link active"
                             id="users-tab"
                             data-bs-toggle="tab"
                             data-bs-target="#usersTab"
@@ -36,7 +37,6 @@
 
                 <li class="nav-item" role="presentation">
                     <button class="nav-link"
-                            th:classappend="${activeTab}=='newUser' ? ' active' : ''"
                             id="newuser-tab"
                             data-bs-toggle="tab"
                             data-bs-target="#newUserTab"
@@ -48,39 +48,45 @@
 
             <div class="tab-content" id="adminTabsContent">
 
-                <div class="tab-pane fade"
-                     th:classappend="${activeTab}=='users' ? ' show active' : ''"
-                     id="usersTab">
-                    <div th:replace="~{fragments/user-table :: userTable(${users}, true)}"></div>
+                <div class="tab-pane fade show active" id="usersTab">
+
+                    <table class="table table-striped table-bordered">
+                        <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>First name</th>
+                            <th>Last name</th>
+                            <th>Email</th>
+                            <th>Username</th>
+                            <th>Roles</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody id="usersTableBody"></tbody>
+                    </table>
                 </div>
 
-                <div class="tab-pane fade"
-                     th:classappend="${activeTab}=='newUser' ? ' show active' : ''"
-                     id="newUserTab">
+                <div class="tab-pane fade" id="newUserTab">
                     <div th:replace="~{fragments/user-form :: userForm(${user}, ${roles})}"></div>
                 </div>
-
             </div>
         </div>
-
     </div>
 </div>
 
-
 <div th:replace="~{fragments/editModal :: editModal}"></div>
 <div th:replace="~{fragments/deleteModal :: deleteModal}"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    // REST API base URL
     const API_BASE_URL = '/api/users';
 
-    // Helper function for API calls
     async function apiCall(url, method, data = null) {
         const options = {
             method: method,
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             }
         };
 
@@ -88,39 +94,32 @@
             options.body = JSON.stringify(data);
         }
 
-        try {
-            const response = await fetch(url, options);
+        const response = await fetch(url, options);
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(errorText || `HTTP error! status: ${response.status}`);
-            }
-
-            if (method === 'DELETE' || response.status === 204) {
-                return null;
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('API call failed:', error);
-            throw error;
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || `HTTP error! status: ${response.status}`);
         }
+
+        if (method === 'DELETE' || response.status === 204) {
+            return null;
+        }
+
+        return await response.json();
     }
 
-    // Load all users
     async function loadUsers() {
         try {
             const users = await apiCall(API_BASE_URL, 'GET');
             updateUserTable(users);
         } catch (error) {
-            console.error('Failed to load users:', error);
-            showError('Failed to load users', error);
+            showError(`Failed to load users: ${error.message}`);
         }
     }
 
-    // Update user table with data
     function updateUserTable(users) {
-        const tableBody = document.querySelector('#usersTab table tbody');
+
+        const tableBody = document.getElementById('usersTableBody');
         if (!tableBody) return;
 
         tableBody.innerHTML = '';
@@ -132,14 +131,14 @@
             row.insertCell(1).textContent = user.firstName || '';
             row.insertCell(2).textContent = user.lastName || '';
             row.insertCell(3).textContent = user.email || '';
-            row.insertCell(4).textContent = user.username;
+            row.insertCell(4).textContent = user.username || '';
 
-            // Roles cell
             const rolesCell = row.insertCell(5);
-            const rolesText = user.roles ? user.roles.map(r => r.name || r.authority || r).join(', ') : '';
+            const rolesText = user.roles
+                ? user.roles.map(role => role.name || role.authority || '').join(', ')
+                : '';
             rolesCell.textContent = rolesText;
 
-            // Actions cell
             const actionsCell = row.insertCell(6);
 
             const editBtn = document.createElement('button');
@@ -151,9 +150,9 @@
             editBtn.setAttribute('data-firstname', user.firstName || '');
             editBtn.setAttribute('data-lastname', user.lastName || '');
             editBtn.setAttribute('data-email', user.email || '');
-            editBtn.setAttribute('data-username', user.username);
-            // Store role IDs as JSON string
-            const roleIds = user.roles ? user.roles.map(r => r.id).join(',') : '';
+            editBtn.setAttribute('data-username', user.username || '');
+
+            const roleIds = user.roles ? user.roles.map(role => role.id).join(',') : '';
             editBtn.setAttribute('data-roles', roleIds);
 
             const deleteBtn = document.createElement('button');
@@ -165,7 +164,7 @@
             deleteBtn.setAttribute('data-firstname', user.firstName || '');
             deleteBtn.setAttribute('data-lastname', user.lastName || '');
             deleteBtn.setAttribute('data-email', user.email || '');
-            deleteBtn.setAttribute('data-username', user.username);
+            deleteBtn.setAttribute('data-username', user.username || '');
             deleteBtn.setAttribute('data-roles', rolesText);
 
             actionsCell.appendChild(editBtn);
@@ -173,22 +172,18 @@
         });
     }
 
-    // Create new user
-    async function createUser(userData, roleIds) {
-        const url = `${API_BASE_URL}?${roleIds.map(id => `roleId=${id}`).join('&')}`;
-
+    async function createUser(userData) {
         try {
-            const newUser = await apiCall(url, 'POST', userData);
+            const newUser = await apiCall(API_BASE_URL, 'POST', userData);
             showSuccess('User created successfully!');
             await loadUsers();
             return newUser;
         } catch (error) {
-            console.error('Failed to create user:', error);
+            showError(`Failed to create user: ${error.message}`);
             throw error;
         }
     }
 
-    // Update user
     async function updateUser(id, userData) {
         try {
             const updatedUser = await apiCall(`${API_BASE_URL}/${id}`, 'PUT', userData);
@@ -196,214 +191,245 @@
             await loadUsers();
             return updatedUser;
         } catch (error) {
-            console.error('Failed to update user:', error);
+            showError(`Failed to update user: ${error.message}`);
             throw error;
         }
     }
 
-    // Delete user
     async function deleteUser(id) {
         try {
             await apiCall(`${API_BASE_URL}/${id}`, 'DELETE');
             showSuccess('User deleted successfully!');
             await loadUsers();
         } catch (error) {
-            console.error('Failed to delete user:', error);
+            showError(`Failed to delete user: ${error.message}`);
             throw error;
         }
     }
 
-    // Helper functions for UI feedback
     function showSuccess(message) {
-        alert(message);
+        const messageBox = document.getElementById('messageBox');
+        if (!messageBox) return;
+
+        messageBox.innerHTML = `
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
     }
 
-    function showError(message, error) {
-        alert(`${message}: ${error.message}`);
+    function showError(message) {
+        const messageBox = document.getElementById('messageBox');
+        if (!messageBox) return;
+
+        messageBox.innerHTML = `
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
     }
 
-    // Handle new user form submission
-    document.addEventListener('DOMContentLoaded', () => {
+    function initCreateForm() {
         const userForm = document.getElementById('userForm');
-        if (userForm) {
-            userForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
+        if (!userForm) return;
 
-                const firstName = document.getElementById('firstName').value;
-                const lastName = document.getElementById('lastName').value;
-                const email = document.getElementById('email').value;
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
+        userForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-                if (!username || !password) {
-                    alert('Username and password are required');
-                    return;
-                }
+            const firstName = document.getElementById('firstName')?.value.trim() || '';
+            const lastName = document.getElementById('lastName')?.value.trim() || '';
+            const email = document.getElementById('email')?.value.trim() || '';
+            const username = document.getElementById('username')?.value.trim() || '';
+            const password = document.getElementById('password')?.value || '';
 
-                const selectedRoles = [];
-                document.querySelectorAll('input[name="roleIds"]:checked').forEach(checkbox => {
-                    selectedRoles.push(checkbox.value);
-                });
+            if (!firstName || !lastName || !email || !username || !password) {
+                showError('All fields are required');
+                return;
+            }
 
-                if (selectedRoles.length === 0) {
-                    alert('Please select at least one role');
-                    return;
-                }
-
-                const userData = {
-                    username: username,
-                    firstName: firstName,
-                    lastName: lastName,
-                    email: email,
-                    password: password
-                };
-
-                try {
-                    await createUser(userData, selectedRoles);
-                    userForm.reset();
-
-                    // Switch to users tab
-                    const usersTab = document.querySelector('#users-tab');
-                    if (usersTab) {
-                        const tab = new bootstrap.Tab(usersTab);
-                        tab.show();
-                    }
-                } catch (error) {
-                    alert(`Failed to create user: ${error.message}`);
-                }
+            const selectedRoles = [];
+            document.querySelectorAll('input[name="roleIds"]:checked').forEach(checkbox => {
+                selectedRoles.push(Number(checkbox.value));
             });
-        }
-    });
 
-    // Handle edit modal
-    document.addEventListener('DOMContentLoaded', () => {
+            if (selectedRoles.length === 0) {
+                showError('Please select at least one role');
+                return;
+            }
+
+            const userData = {
+                firstName: firstName,
+                lastName: lastName,
+                email: email,
+                username: username,
+                password: password,
+                roles: selectedRoles.map(id => ({ id: id }))
+            };
+
+            try {
+                await createUser(userData);
+                userForm.reset();
+
+                const usersTabBtn = document.getElementById('users-tab');
+                if (usersTabBtn) {
+                    const tab = new bootstrap.Tab(usersTabBtn);
+                    tab.show();
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        });
+    }
+
+    function initEditModal() {
         const editModal = document.getElementById('editModal');
-        if (editModal) {
-            editModal.addEventListener('show.bs.modal', (event) => {
-                const button = event.relatedTarget;
-                if (!button) return;
+        if (!editModal) return;
 
-                document.getElementById('edit-id').value = button.getAttribute('data-id') || '';
-                document.getElementById('edit-firstName').value = button.getAttribute('data-firstname') || '';
-                document.getElementById('edit-lastName').value = button.getAttribute('data-lastname') || '';
-                document.getElementById('edit-email').value = button.getAttribute('data-email') || '';
-                document.getElementById('edit-username').value = button.getAttribute('data-username') || '';
-                document.getElementById('edit-password').value = '';
+        editModal.addEventListener('show.bs.modal', (event) => {
+            const button = event.relatedTarget;
+            if (!button) return;
 
-                // Set selected roles
-                const editRolesSelect = document.getElementById('edit-roles');
-                if (editRolesSelect) {
-                    // Clear all selections
-                    Array.from(editRolesSelect.options).forEach(opt => opt.selected = false);
+            document.getElementById('edit-id').value = button.getAttribute('data-id') || '';
+            document.getElementById('edit-firstName').value = button.getAttribute('data-firstname') || '';
+            document.getElementById('edit-lastName').value = button.getAttribute('data-lastname') || '';
+            document.getElementById('edit-email').value = button.getAttribute('data-email') || '';
+            document.getElementById('edit-username').value = button.getAttribute('data-username') || '';
+            document.getElementById('edit-password').value = '';
 
-                    const roleIds = button.getAttribute('data-roles') || '';
-                    const selectedRoleIds = roleIds.split(',').map(id => id.trim()).filter(Boolean);
+            const editRolesSelect = document.getElementById('edit-roles');
+            if (editRolesSelect) {
+                Array.from(editRolesSelect.options).forEach(option => option.selected = false);
 
-                    selectedRoleIds.forEach(roleId => {
-                        const option = Array.from(editRolesSelect.options).find(opt => opt.value === roleId);
-                        if (option) option.selected = true;
-                    });
-                }
+                const roleIds = button.getAttribute('data-roles') || '';
+                const selectedRoleIds = roleIds.split(',')
+                    .map(id => id.trim())
+                    .filter(Boolean);
 
-                const errorDiv = document.getElementById('edit-roles-error');
-                if (errorDiv) errorDiv.textContent = '';
-            });
-
-            const editForm = document.getElementById('editForm');
-            if (editForm) {
-                editForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-
-                    const id = document.getElementById('edit-id').value;
-                    const userData = {
-                        username: document.getElementById('edit-username').value,
-                        firstName: document.getElementById('edit-firstName').value,
-                        lastName: document.getElementById('edit-lastName').value,
-                        email: document.getElementById('edit-email').value
-                    };
-
-                    const password = document.getElementById('edit-password').value;
-                    if (password && password.trim() !== '') {
-                        userData.password = password;
-                    }
-
-                    const editRolesSelect = document.getElementById('edit-roles');
-                    const selectedOptions = Array.from(editRolesSelect.selectedOptions);
-
-                    if (selectedOptions.length === 0) {
-                        const errorDiv = document.getElementById('edit-roles-error');
-                        if (errorDiv) errorDiv.textContent = 'Please select at least one role';
-                        return;
-                    }
-
-                    userData.roles = selectedOptions.map(opt => ({
-                        id: parseInt(opt.value)
-                    }));
-
-                    try {
-                        await updateUser(id, userData);
-                        const modal = bootstrap.Modal.getInstance(editModal);
-                        modal.hide();
-                    } catch (error) {
-                        alert(`Failed to update user: ${error.message}`);
-                    }
-                });
-            }
-        }
-    });
-
-    // Handle delete modal
-    document.addEventListener('DOMContentLoaded', () => {
-        const deleteModal = document.getElementById('deleteModal');
-        if (deleteModal) {
-            deleteModal.addEventListener('show.bs.modal', (event) => {
-                const button = event.relatedTarget;
-                if (!button) return;
-
-                document.getElementById('delete-id').value = button.getAttribute('data-id') || '';
-                document.getElementById('delete-firstName').value = button.getAttribute('data-firstname') || '';
-                document.getElementById('delete-lastName').value = button.getAttribute('data-lastname') || '';
-                document.getElementById('delete-email').value = button.getAttribute('data-email') || '';
-                document.getElementById('delete-username').value = button.getAttribute('data-username') || '';
-
-                const deleteRolesSelect = document.getElementById('delete-roles');
-                if (deleteRolesSelect) {
-                    deleteRolesSelect.innerHTML = '';
-                    const rolesStr = button.getAttribute('data-roles') || '';
-                    const roles = rolesStr.split(',').map(s => s.trim()).filter(Boolean);
-
-                    roles.forEach(role => {
-                        const option = document.createElement('option');
-                        option.textContent = role;
+                selectedRoleIds.forEach(roleId => {
+                    const option = Array.from(editRolesSelect.options)
+                        .find(opt => opt.value === roleId);
+                    if (option) {
                         option.selected = true;
-                        deleteRolesSelect.appendChild(option);
-                    });
-                }
-            });
-
-            const deleteForm = document.getElementById('deleteForm');
-            if (deleteForm) {
-                deleteForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-
-                    const id = document.getElementById('delete-id').value;
-
-                    if (confirm('Are you sure you want to delete this user?')) {
-                        try {
-                            await deleteUser(id);
-                            const modal = bootstrap.Modal.getInstance(deleteModal);
-                            modal.hide();
-                        } catch (error) {
-                            alert(`Failed to delete user: ${error.message}`);
-                        }
                     }
                 });
             }
-        }
-    });
 
-    // Load users when page loads
+            const errorDiv = document.getElementById('edit-roles-error');
+            if (errorDiv) {
+                errorDiv.textContent = '';
+            }
+        });
+
+        const editForm = document.getElementById('editForm');
+        if (!editForm) return;
+
+        editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const id = document.getElementById('edit-id')?.value;
+            const editRolesSelect = document.getElementById('edit-roles');
+
+            if (!editRolesSelect) {
+                showError('Roles field not found');
+                return;
+            }
+
+            const selectedOptions = Array.from(editRolesSelect.selectedOptions);
+            if (selectedOptions.length === 0) {
+                const errorDiv = document.getElementById('edit-roles-error');
+                if (errorDiv) {
+                    errorDiv.textContent = 'Please select at least one role';
+                }
+                return;
+            }
+
+            const userData = {
+                firstName: document.getElementById('edit-firstName')?.value.trim() || '',
+                lastName: document.getElementById('edit-lastName')?.value.trim() || '',
+                email: document.getElementById('edit-email')?.value.trim() || '',
+                username: document.getElementById('edit-username')?.value.trim() || '',
+                roles: selectedOptions.map(opt => ({
+                    id: Number(opt.value)
+                }))
+            };
+
+            const password = document.getElementById('edit-password')?.value || '';
+            if (password.trim() !== '') {
+                userData.password = password;
+            }
+
+            try {
+                await updateUser(id, userData);
+
+                const modal = bootstrap.Modal.getInstance(editModal);
+                if (modal) {
+                    modal.hide();
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        });
+    }
+
+    function initDeleteModal() {
+        const deleteModal = document.getElementById('deleteModal');
+        if (!deleteModal) return;
+
+        deleteModal.addEventListener('show.bs.modal', (event) => {
+            const button = event.relatedTarget;
+            if (!button) return;
+
+            document.getElementById('delete-id').value = button.getAttribute('data-id') || '';
+            document.getElementById('delete-firstName').value = button.getAttribute('data-firstname') || '';
+            document.getElementById('delete-lastName').value = button.getAttribute('data-lastname') || '';
+            document.getElementById('delete-email').value = button.getAttribute('data-email') || '';
+            document.getElementById('delete-username').value = button.getAttribute('data-username') || '';
+
+            const deleteRolesSelect = document.getElementById('delete-roles');
+            if (deleteRolesSelect) {
+                deleteRolesSelect.innerHTML = '';
+
+                const rolesStr = button.getAttribute('data-roles') || '';
+                const roles = rolesStr.split(',')
+                    .map(role => role.trim())
+                    .filter(Boolean);
+
+                roles.forEach(role => {
+                    const option = document.createElement('option');
+                    option.textContent = role;
+                    option.selected = true;
+                    deleteRolesSelect.appendChild(option);
+                });
+            }
+        });
+
+        const deleteForm = document.getElementById('deleteForm');
+        if (!deleteForm) return;
+
+        deleteForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const id = document.getElementById('delete-id')?.value;
+
+            try {
+                await deleteUser(id);
+
+                const modal = bootstrap.Modal.getInstance(deleteModal);
+                if (modal) {
+                    modal.hide();
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
+        initCreateForm();
+        initEditModal();
+        initDeleteModal();
         loadUsers();
     });
 </script>

@@ -1,11 +1,14 @@
 package springboot.security.controller;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import springboot.security.model.Role;
 import springboot.security.model.User;
+import springboot.security.service.DuplicateUsernameException;
 import springboot.security.service.UserService;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,7 +28,7 @@ public class MyRestController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+    public ResponseEntity<?> getUserById(@PathVariable Long id) {
         User user = userService.getUser(id);
         if (user == null) {
             return ResponseEntity.notFound().build();
@@ -34,41 +37,53 @@ public class MyRestController {
     }
 
     @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user, @RequestParam List<Long> roleId) {
-        User saved = userService.saveUser(user, roleId);
-        return ResponseEntity
-                .created(URI.create("/api/users" + saved.getId()))
-                .body(saved);
+    public ResponseEntity<?> createUser(
+            @RequestBody User user,
+            @RequestParam(required = false) List<Long> roleId) {
+        try {
+            List<Long> rolesToAssign = roleId != null ? roleId : new ArrayList<>();
+
+            User saved = userService.saveUser(user, rolesToAssign);
+
+            return ResponseEntity
+                    .created(URI.create("/api/users/" + saved.getId()))
+                    .body(saved);
+        } catch (DuplicateUsernameException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
-        User existing = userService.getUser(id);
-        if (existing == null) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User user) {
+        try {
+            User existing = userService.getUser(id);
+
+            if (existing == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            existing.setUsername(user.getUsername());
+            existing.setFirstName(user.getFirstName());
+            existing.setLastName(user.getLastName());
+            existing.setEmail(user.getEmail());
+
+            if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+                existing.setPassword(user.getPassword());
+            }
+
+            List<Long> roleIds = user.getRoles() != null
+                    ? user.getRoles().stream().map(Role::getId).collect(Collectors.toList())
+                    : null;
+
+            User saved = userService.saveUser(existing, roleIds);
+            return ResponseEntity.ok(saved);
+        } catch (DuplicateUsernameException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
-
-        existing.setUsername(user.getUsername());
-        existing.setFirstName(user.getFirstName());
-        existing.setLastName(user.getLastName());
-        existing.setEmail(user.getEmail());
-
-        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
-            existing.setPassword(user.getPassword());
-        }
-
-
-        List<Long> roleIds = user.getRoles() != null
-                ? user.getRoles().stream().map(Role::getId).collect(Collectors.toList())
-                : null;
-
-        User saved = userService.saveUser(existing, roleIds);
-        return ResponseEntity.ok(saved);
     }
 
-
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
         User existing = userService.getUser(id);
         if (existing == null) {
             return ResponseEntity.notFound().build();
