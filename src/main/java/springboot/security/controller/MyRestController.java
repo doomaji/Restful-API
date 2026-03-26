@@ -63,7 +63,17 @@ public class MyRestController {
                 return ResponseEntity.notFound().build();
             }
 
-            existing.setUsername(user.getUsername());
+            String newUsername = user.getUsername();
+            String currentUsername = existing.getUsername();
+
+            if (!newUsername.equals(currentUsername)) {
+
+                if (userService.existsByUsernameAndIdNot(newUsername, id)) {
+                    return ResponseEntity.badRequest().body("Пользователь с таким именем уже существует");
+                }
+            }
+
+            existing.setUsername(newUsername);
             existing.setFirstName(user.getFirstName());
             existing.setLastName(user.getLastName());
             existing.setEmail(user.getEmail());

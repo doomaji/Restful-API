@@ -13,4 +13,5 @@ public interface UserService {
     User getByUsername(String username);
     List<Role> getAllRoles();
     boolean usernameExists(String username);
+    boolean existsByUsernameAndIdNot(String username, Long id);
 }
