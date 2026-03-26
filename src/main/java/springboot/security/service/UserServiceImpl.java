@@ -45,12 +45,12 @@ public class UserServiceImpl implements UserService {
         if (userRepository.existsByUsername(incoming.getUsername())) {
 
             if (incoming.getId() == null) {
-                throw new DuplicateUsernameException("Username already exists");
+                throw new DuplicateUsernameException();
             }
 
             User existing = userRepository.findByUsername(incoming.getUsername()).orElse(null);
             if (existing != null && !existing.getId().equals(incoming.getId())) {
-                throw new DuplicateUsernameException("Username already exists");
+                throw new DuplicateUsernameException();
             }
         }
         Set<Role> roles = new HashSet<>();
