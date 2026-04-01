@@ -10,7 +10,12 @@
                 <input class="form-control form-control-sm"
                        id="firstName"
                        name="firstName"
-                       required>
+                       required
+                       minlength="2"
+                       maxlength="50"
+                       pattern="[A-Za-z\s-]+"
+                       title="Только буквы и тире">
+                <div class="invalid-feedback">От 2 до 50 символов, только буквы и тире</div>
             </div>
 
             <div class="text-center fw-bold mb-1">Last Name</div>
@@ -18,7 +23,12 @@
                 <input class="form-control form-control-sm"
                        id="lastName"
                        name="lastName"
-                       required>
+                       required
+                       minlength="2"
+                       maxlength="50"
+                       pattern="[A-Za-z\s-]+"
+                       title="Только буквы и тире">
+                <div class="invalid-feedback">От 2 до 50 символов, только буквы и тире</div>
             </div>
 
             <div class="text-center fw-bold mb-1">Email</div>
@@ -28,6 +38,7 @@
                        id="email"
                        name="email"
                        required>
+                <div class="invalid-feedback">Неверный email</div>
             </div>
 
             <div class="text-center fw-bold mb-1">Username</div>
@@ -35,7 +46,12 @@
                 <input class="form-control form-control-sm"
                        id="username"
                        name="username"
-                       required>
+                       required
+                       minlength="2"
+                       maxlength="50"
+                       pattern="[A-Za-z\s-]+"
+                       title="Только буквы и символы">
+                <div class="invalid-feedback">От 2 до 50 символов, только буквы и тире</div>
             </div>
 
             <div class="text-center fw-bold mb-1">Password</div>
@@ -45,6 +61,7 @@
                        id="password"
                        name="password"
                        required>
+                <div class="invalid-feedback">Пароль неверный</div>
             </div>
 
             <div class="text-center fw-bold mb-2">Roles</div>

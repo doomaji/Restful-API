@@ -7,7 +7,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
 
-                <form id="editForm">
+                <form id="editForm" novalidate>
 
                     <input type="hidden" id="edit-id"/>
 
@@ -20,32 +20,62 @@
 
                         <div class="text-center fw-bold mb-1">
                             <label class="form-label fw-bold">First name</label>
-                            <input class="form-control form-control-sm" id="edit-firstName">
+                            <input class="form-control form-control-sm"
+                                   id="edit-firstName"
+                                   required
+                                   minlength="2"
+                                   maxlength="50"
+                                   pattern="[A-Za-zА-Яа-я\s-]+"
+                                   title="Только буквы и тире">
+                            <div class="invalid-feedback">От 2 до 50 символов, только буквы и тире</div>
                         </div>
 
                         <div class="text-center fw-bold mb-1">
                             <label class="form-label fw-bold">Last name</label>
-                            <input class="form-control form-control-sm" id="edit-lastName">
+                            <input class="form-control form-control-sm"
+                                   id="edit-lastName"
+                                   required
+                                   minlength="2"
+                                   maxlength="50"
+                                   pattern="[A-Za-zА-Яа-я\s-]+"
+                                   title="Только буквы и тире">
+                            <div class="invalid-feedback">От 2 до 50 символов, только буквы и тире</div>
                         </div>
 
                         <div class="text-center fw-bold mb-1">
                             <label class="form-label fw-bold">Email</label>
-                            <input class="form-control form-control-sm" id="edit-email">
+                            <input class="form-control form-control-sm"
+                                   id="edit-email"
+                                   type="email"
+                                   required>
+                            <div class="invalid-feedback">Неверный email</div>
                         </div>
 
                         <div class="text-center fw-bold mb-1">
                             <label class="form-label fw-bold">Username</label>
-                            <input class="form-control form-control-sm" id="edit-username">
+                            <input class="form-control form-control-sm"
+                                   id="edit-username"
+                                   required
+                                   minlength="2"
+                                   maxlength="50"
+                                   pattern="[A-Za-zА-Яа-я0-9_\-]+"
+                                   title="Только буквы, цифры, подчеркивание и тире">
+                            <div class="invalid-feedback">От 2 до 50 символов, только буквы, цифры, подчеркивание и тире</div>
                         </div>
 
                         <div class="text-center fw-bold mb-1">
                             <label class="form-label fw-bold">Password</label>
-                            <input class="form-control form-control-sm" type="password" id="edit-password">
+                            <input class="form-control form-control-sm"
+                                   type="password"
+                                   id="edit-password"
+                                   pattern="^(?=.*[A-Za-zА-Яа-я])(?=.*\d)[A-Za-zА-Яа-я\d]{6,}$"
+                                   title="Минимум 6 символов, хотя бы одна буква и одна цифра">
+                            <div class="invalid-feedback">Пароль должен содержать минимум 6 символов, хотя бы одну букву и одну цифру</div>
+                            <small class="text-muted">Оставьте пустым, чтобы сохранить текущий пароль</small>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label fw-bold">Roles</label>
-
                             <select class="form-select form-select-sm"
                                     id="edit-roles"
                                     multiple
