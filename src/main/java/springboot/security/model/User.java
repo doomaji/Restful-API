@@ -23,7 +23,6 @@ public class User implements UserDetails {
     private String username;
 
     @Column(nullable = false)
-    @NotBlank(message = "Поле не может быть пустым")
     private String password;
 
     @ManyToMany(fetch = FetchType.EAGER)
