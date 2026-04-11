@@ -8,6 +8,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import springboot.security.model.Role;
 import springboot.security.model.User;
+import springboot.security.model.UserCreateDTO;
+import springboot.security.model.UserUpdateDTO;
 import springboot.security.service.DuplicateUsernameException;
 import springboot.security.service.UserService;
 
@@ -43,17 +45,23 @@ public class MyRestController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createUser(@Valid @RequestBody User user, BindingResult bindingResult) {
+    public ResponseEntity<?> createUser(@Valid @RequestBody UserCreateDTO userDto, BindingResult bindingResult) {
         Map<String, String> errors = new HashMap<>();
+
         if (bindingResult.hasErrors()) {
             bindingResult.getFieldErrors().forEach(error ->
                     errors.put(error.getField(), error.getDefaultMessage())
             );
             return ResponseEntity.badRequest().body(errors);
         }
+
         try {
-            List<Long> roleIds = user.getRoles() != null
-                    ? user.getRoles().stream().map(Role::getId).collect(Collectors.toList())
+            User user = new User();
+            user.setUsername(userDto.getUsername());
+            user.setPassword(userDto.getPassword());
+
+            List<Long> roleIds = userDto.getRoleIds() != null
+                    ? userDto.getRoleIds()
                     : new ArrayList<>();
 
             User saved = userService.saveUser(user, roleIds);
@@ -70,14 +78,21 @@ public class MyRestController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateUser(@PathVariable Long id, @Valid @RequestBody User user, BindingResult bindingResult) {
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @Valid @RequestBody UserUpdateDTO userDto, BindingResult bindingResult) {
         Map<String, String> errors = new HashMap<>();
+
         if (bindingResult.hasErrors()) {
             bindingResult.getFieldErrors().forEach(error ->
                     errors.put(error.getField(), error.getDefaultMessage())
             );
             return ResponseEntity.badRequest().body(errors);
         }
+
+        if (userDto.getPassword() != null && userDto.getPassword().trim().isEmpty()) {
+            errors.put("password", "Пароль не может быть пустой строкой");
+            return ResponseEntity.badRequest().body(errors);
+        }
+
         try {
             User existing = userService.getUser(id);
 
@@ -85,26 +100,34 @@ public class MyRestController {
                 return ResponseEntity.notFound().build();
             }
 
-            String newUsername = user.getUsername();
-            String currentUsername = existing.getUsername();
+            if (userDto.getUsername() != null && !userDto.getUsername().trim().isEmpty()) {
+                String newUsername = userDto.getUsername();
+                String currentUsername = existing.getUsername();
 
-            if (!newUsername.equals(currentUsername)) {
-
-                if (userService.existsByUsernameAndIdNot(newUsername, id)) {
-                    return ResponseEntity.badRequest().body("Пользователь с таким именем уже существует");
+                if (!newUsername.equals(currentUsername)) {
+                    if (userService.existsByUsernameAndIdNot(newUsername, id)) {
+                        errors.put("username", "Пользователь с таким именем уже существует");
+                        return ResponseEntity.badRequest().body(errors);
+                    }
                 }
+                existing.setUsername(newUsername);
+            } else if (userDto.getUsername() != null && userDto.getUsername().trim().isEmpty()) {
+                errors.put("username", "Имя пользователя не может быть пустой строкой");
+                return ResponseEntity.badRequest().body(errors);
             }
 
-            user.setId(id);
+            if (userDto.getPassword() != null) {
+                existing.setPassword(userDto.getPassword());
+            }
 
-            List<Long> roleIds = user.getRoles() != null
-                    ? user.getRoles().stream().map(Role::getId).collect(Collectors.toList())
-                    : null;
+            List<Long> roleIds = userDto.getRoleIds();
 
-            User saved = userService.saveUser(user, roleIds);
+            User saved = userService.saveUser(existing, roleIds);
             return ResponseEntity.ok(saved);
+
         } catch (DuplicateUsernameException | IncorrectResultSizeDataAccessException e) {
-            return ResponseEntity.badRequest().body("Пользователь с таким именем уже существует");
+            errors.put("username", "Пользователь с таким именем уже существует");
+            return ResponseEntity.badRequest().body(errors);
         } catch (ValidationException e) {
             errors.put("validation", e.getMessage());
             return ResponseEntity.badRequest().body(errors);
