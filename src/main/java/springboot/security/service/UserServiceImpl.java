@@ -7,7 +7,6 @@ import springboot.security.jpa.RoleRepository;
 import springboot.security.jpa.UserRepository;
 import springboot.security.model.Role;
 import springboot.security.model.User;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -43,26 +42,26 @@ public class UserServiceImpl implements UserService {
     public User saveUser(User incoming, List<Long> roleIds) {
 
         if (userRepository.existsByUsername(incoming.getUsername())) {
-
             if (incoming.getId() == null) {
                 throw new DuplicateUsernameException();
             }
-
             User existing = userRepository.findByUsername(incoming.getUsername()).orElse(null);
             if (existing != null && !existing.getId().equals(incoming.getId())) {
                 throw new DuplicateUsernameException();
             }
         }
+
         Set<Role> roles = new HashSet<>();
         if (roleIds != null && !roleIds.isEmpty()) {
             roles.addAll(roleRepository.findAllById(roleIds));
         }
         incoming.setRoles(roles);
 
+
         if (incoming.getId() == null) {
             incoming.setPassword(passwordEncoder.encode(incoming.getPassword()));
-            userRepository.save(incoming);
-            return incoming;
+
+            return userRepository.save(incoming);
         }
 
         User db = userRepository.findById(incoming.getId())
@@ -78,8 +77,7 @@ public class UserServiceImpl implements UserService {
             db.setPassword(passwordEncoder.encode(incoming.getPassword()));
         }
 
-        userRepository.save(db);
-        return db;
+        return userRepository.save(db);
     }
 
     @Override
@@ -96,6 +94,7 @@ public class UserServiceImpl implements UserService {
     public List<Role> getAllRoles() {
         return roleRepository.findAll();
     }
+
     public boolean usernameExists(String username) {
         return userRepository.existsByUsername(username);
     }

@@ -5,10 +5,19 @@ import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 
 public class UserCreateDTO {
-    @NotBlank(message = "Имя пользователя не может быть пустым")
+    @NotBlank(message = "Поле не может быть пустым")
+    private String firstName;
+
+    @NotBlank(message = "Поле не может быть пустым")
+    private String lastName;
+
+    @NotBlank(message = "Поле не может быть пустым")
+    private String email;
+
+    @NotBlank(message = "Поле не может быть пустым")
     private String username;
 
-    @NotBlank(message = "Пароль не может быть пустым")
+    @NotBlank(message = "Поле не может быть пустым")
     private String password;
 
     private List<Long> roleIds;
@@ -33,8 +42,17 @@ public class UserCreateDTO {
         return roleIds;
     }
 
-    public void setRoleIds(List<Long> roleIds) {
-        this.roleIds = roleIds;
+    public String getFirstName() {
+        return firstName;
     }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
 }
 

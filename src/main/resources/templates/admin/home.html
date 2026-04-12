@@ -173,8 +173,17 @@
     }
 
     async function createUser(userData) {
+        const requestData = {
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            email: userData.email,
+            username: userData.username,
+            password: userData.password,
+            roleIds: userData.roleIds
+        };
+
         try {
-            const newUser = await apiCall(API_BASE_URL, 'POST', userData);
+            const newUser = await apiCall(API_BASE_URL, 'POST', requestData);
             showSuccess('User created successfully!');
             await loadUsers();
             return newUser;
@@ -185,8 +194,20 @@
     }
 
     async function updateUser(id, userData) {
+        const requestData = {
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            email: userData.email,
+            username: userData.username,
+            roleIds: userData.roleIds
+        };
+
+        if (userData.password) {
+            requestData.password = userData.password;
+        }
+
         try {
-            const updatedUser = await apiCall(`${API_BASE_URL}/${id}`, 'PUT', userData);
+            const updatedUser = await apiCall(`${API_BASE_URL}/${id}`, 'PUT', requestData);
             showSuccess('User updated successfully!');
             await loadUsers();
             return updatedUser;
@@ -265,7 +286,7 @@
                 email: email,
                 username: username,
                 password: password,
-                roles: selectedRoles.map(id => ({ id: id }))
+                roleIds: selectedRoles
             };
 
             try {
@@ -350,9 +371,7 @@
                 lastName: document.getElementById('edit-lastName')?.value.trim() || '',
                 email: document.getElementById('edit-email')?.value.trim() || '',
                 username: document.getElementById('edit-username')?.value.trim() || '',
-                roles: selectedOptions.map(opt => ({
-                    id: Number(opt.value)
-                }))
+                roleIds: selectedOptions.map(opt => Number(opt.value))
             };
 
             const password = document.getElementById('edit-password')?.value || '';

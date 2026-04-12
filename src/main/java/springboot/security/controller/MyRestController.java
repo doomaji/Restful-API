@@ -6,7 +6,6 @@ import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import springboot.security.model.Role;
 import springboot.security.model.User;
 import springboot.security.model.UserCreateDTO;
 import springboot.security.model.UserUpdateDTO;
@@ -18,7 +17,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
@@ -57,6 +55,9 @@ public class MyRestController {
 
         try {
             User user = new User();
+            user.setFirstName(userDto.getFirstName());
+            user.setLastName(userDto.getLastName());
+            user.setEmail(userDto.getEmail());
             user.setUsername(userDto.getUsername());
             user.setPassword(userDto.getPassword());
 
@@ -69,6 +70,7 @@ public class MyRestController {
             return ResponseEntity
                     .created(URI.create("/api/users/" + saved.getId()))
                     .body(saved);
+
         } catch (DuplicateUsernameException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (ValidationException e) {
@@ -118,6 +120,16 @@ public class MyRestController {
 
             if (userDto.getPassword() != null) {
                 existing.setPassword(userDto.getPassword());
+            }
+
+            if (userDto.getFirstName() != null) {
+                existing.setFirstName(userDto.getFirstName());
+            }
+            if (userDto.getLastName() != null) {
+                existing.setLastName(userDto.getLastName());
+            }
+            if (userDto.getEmail() != null) {
+                existing.setEmail(userDto.getEmail());
             }
 
             List<Long> roleIds = userDto.getRoleIds();

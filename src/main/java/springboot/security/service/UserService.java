@@ -12,6 +12,5 @@ public interface UserService {
     void deleteUser(Long id);
     User getByUsername(String username);
     List<Role> getAllRoles();
-    boolean usernameExists(String username);
     boolean existsByUsernameAndIdNot(String username, Long id);
 }
