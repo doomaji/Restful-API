@@ -6,6 +6,7 @@ import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import springboot.security.model.Role;
 import springboot.security.model.User;
 import springboot.security.model.UserCreateDTO;
 import springboot.security.model.UserUpdateDTO;
@@ -83,6 +84,11 @@ public class MyRestController {
     public ResponseEntity<?> updateUser(@PathVariable Long id, @Valid @RequestBody UserUpdateDTO userDto, BindingResult bindingResult) {
         Map<String, String> errors = new HashMap<>();
 
+        User existing = userService.getUser(id);
+        if (existing == null) {
+            return ResponseEntity.notFound().build();
+        }
+
         if (bindingResult.hasErrors()) {
             bindingResult.getFieldErrors().forEach(error ->
                     errors.put(error.getField(), error.getDefaultMessage())
@@ -90,51 +96,55 @@ public class MyRestController {
             return ResponseEntity.badRequest().body(errors);
         }
 
-        if (userDto.getPassword() != null && userDto.getPassword().trim().isEmpty()) {
-            errors.put("password", "Пароль не может быть пустой строкой");
-            return ResponseEntity.badRequest().body(errors);
-        }
-
         try {
-            User existing = userService.getUser(id);
+            User user = new User();
+            user.setId(id);
 
-            if (existing == null) {
-                return ResponseEntity.notFound().build();
+            if (userDto.getFirstName() != null) {
+                user.setFirstName(userDto.getFirstName());
+            } else {
+                user.setFirstName(existing.getFirstName());
+            }
+
+            if (userDto.getLastName() != null) {
+                user.setLastName(userDto.getLastName());
+            } else {
+                user.setLastName(existing.getLastName());
+            }
+
+            if (userDto.getEmail() != null) {
+                user.setEmail(userDto.getEmail());
+            } else {
+                user.setEmail(existing.getEmail());
             }
 
             if (userDto.getUsername() != null && !userDto.getUsername().trim().isEmpty()) {
-                String newUsername = userDto.getUsername();
-                String currentUsername = existing.getUsername();
 
-                if (!newUsername.equals(currentUsername)) {
-                    if (userService.existsByUsernameAndIdNot(newUsername, id)) {
-                        errors.put("username", "Пользователь с таким именем уже существует");
-                        return ResponseEntity.badRequest().body(errors);
-                    }
+                if (!userDto.getUsername().equals(existing.getUsername()) &&
+                        userService.existsByUsernameAndIdNot(userDto.getUsername(), id)) {
+                    errors.put("username", "Пользователь с таким именем уже существует");
+                    return ResponseEntity.badRequest().body(errors);
                 }
-                existing.setUsername(newUsername);
+                user.setUsername(userDto.getUsername());
             } else if (userDto.getUsername() != null && userDto.getUsername().trim().isEmpty()) {
                 errors.put("username", "Имя пользователя не может быть пустой строкой");
                 return ResponseEntity.badRequest().body(errors);
+            } else {
+                user.setUsername(existing.getUsername());
             }
 
-            if (userDto.getPassword() != null) {
-                existing.setPassword(userDto.getPassword());
-            }
-
-            if (userDto.getFirstName() != null) {
-                existing.setFirstName(userDto.getFirstName());
-            }
-            if (userDto.getLastName() != null) {
-                existing.setLastName(userDto.getLastName());
-            }
-            if (userDto.getEmail() != null) {
-                existing.setEmail(userDto.getEmail());
+            if (userDto.getPassword() != null && !userDto.getPassword().trim().isEmpty()) {
+                user.setPassword(userDto.getPassword());
             }
 
             List<Long> roleIds = userDto.getRoleIds();
+            if (roleIds == null) {
+                roleIds = existing.getRoles().stream()
+                        .map(Role::getId)
+                        .toList();
+            }
 
-            User saved = userService.saveUser(existing, roleIds);
+            User saved = userService.saveUser(user, roleIds);
             return ResponseEntity.ok(saved);
 
         } catch (DuplicateUsernameException | IncorrectResultSizeDataAccessException e) {

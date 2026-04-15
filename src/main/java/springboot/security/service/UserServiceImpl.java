@@ -57,7 +57,6 @@ public class UserServiceImpl implements UserService {
         }
         incoming.setRoles(roles);
 
-
         if (incoming.getId() == null) {
             incoming.setPassword(passwordEncoder.encode(incoming.getPassword()));
 
@@ -93,10 +92,6 @@ public class UserServiceImpl implements UserService {
 
     public List<Role> getAllRoles() {
         return roleRepository.findAll();
-    }
-
-    public boolean usernameExists(String username) {
-        return userRepository.existsByUsername(username);
     }
 
     @Override

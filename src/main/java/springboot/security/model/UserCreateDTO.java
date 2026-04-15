@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 
 public class UserCreateDTO {
+
     @NotBlank(message = "Поле не может быть пустым")
     private String firstName;
 
@@ -40,6 +41,22 @@ public class UserCreateDTO {
 
     public List<Long> getRoleIds() {
         return roleIds;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public void setRoleIds(List<Long> roleIds) {
+        this.roleIds = roleIds;
     }
 
     public String getFirstName() {

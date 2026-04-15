@@ -6,15 +6,15 @@ import java.util.List;
 
 public class UserUpdateDTO {
 
-    private final String firstName;
-    private final String lastName;
-    private final String email;
+    private String firstName;
+    private String lastName;
+    private String email;
     private String username;
 
     @Size(min = 6, message = "Пароль должен содержать минимум 6 символов")
     private String password;
 
-    private final List<Long> roleIds;
+    private List<Long> roleIds;
 
     public UserUpdateDTO(String firstName, String lastName, String email, String username, String password, List<Long> roleIds) {
         this.firstName = firstName;
@@ -24,6 +24,8 @@ public class UserUpdateDTO {
         this.password = password;
         this.roleIds = roleIds;
     }
+
+    public UserUpdateDTO() {}
 
     public String getUsername() {
         return username;
